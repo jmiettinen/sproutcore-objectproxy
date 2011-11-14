@@ -1,2 +1,2 @@
-SC.ObjectProxy
-==============
+::sproutcore-objectproxy::
+==========================
