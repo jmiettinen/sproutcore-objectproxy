@@ -8,6 +8,10 @@
 
 var get = SC.get, set = SC.set, getPath = SC.getPath;
 
+SC.isEnumerable = function(content) {
+  return get(content, 'isEnumerable') === true;
+};
+
 /** @class
 
   An ObjectProxy gives you a simple way to manage the editing state of
@@ -115,7 +119,7 @@ SC.ObjectProxy = SC.Object.extend({
         len, allowsMultiple;
         
     // if enumerable, extract the first item or possibly become null
-    if (content && get(content, 'isEnumerable')) {
+    if (content && SC.isEnumerable(content)) {
       len = get(content, 'length');
       allowsMultiple = get(this, 'allowsMultipleContent');
       
@@ -126,7 +130,7 @@ SC.ObjectProxy = SC.Object.extend({
       }
       
       // if we got some new content, it better not be enum also...
-      if (content && !allowsMultiple && get(content, 'isEnumerable')) content = null;
+      if (content && !allowsMultiple && SC.isEnumerable(content)) content = null;
     }
     
     return content;
@@ -164,6 +168,7 @@ SC.ObjectProxy = SC.Object.extend({
     @returns {Object} property value
   */
   unknownProperty: function(key, value) {    
+    if (key === "content") return undefined; // Otherwise we would get infinite recursion.
     this._proxiedProperties.add(key);
     SC.defineProperty(this, key, SC.computed(function(key, value) {
       // for all other keys, just pass through to the observable object if 
@@ -172,7 +177,7 @@ SC.ObjectProxy = SC.Object.extend({
       if (content === null || content === undefined) return undefined; // empty
 
       if (value === undefined) {
-        if (get(content, 'isEnumerable')) {
+        if (SC.isEnumerable(content)) {
           value = content.getEach(key);
           if (get(value, 'length') === 0) {
             value = undefined; // empty array.
@@ -186,7 +191,7 @@ SC.ObjectProxy = SC.Object.extend({
         if (!get(this, 'isEditable')) {
           throw SC.Error.create("%@.%@ is not editable".fmt(this, key));
         }
-        if (get(content, 'isEnumerable')) {
+        if (SC.isEnumerable(content)) {
           content.setEach(key, value);
         } else {
           set(content, key, value);
