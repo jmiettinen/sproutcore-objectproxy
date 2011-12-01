@@ -167,8 +167,28 @@ SC.ObjectProxy = SC.Object.extend({
     @property {Object} value value to set or undefined if reading only
     @returns {Object} property value
   */
-  unknownProperty: function(key, value) {    
+  unknownProperty: function(key) {
     if (key === "content") return undefined; // Otherwise we would get infinite recursion.
+    this._proxyProperty(key);
+    return get(this, key);
+  },
+
+  setUnknownProperty: function(key, value) {
+    this._proxyProperty(key);
+    return set(this, key, value);
+  },
+
+  /**
+  */
+  contentDidChange: function() {
+    this._proxiedProperties.forEach(function(key){
+      this.notifyPropertyChange(key);
+    }, this);
+  }.observes('content'),
+
+  /** @private */
+
+  _proxyProperty: function(key) {
     this._proxiedProperties.add(key);
     SC.defineProperty(this, key, SC.computed(function(key, value) {
       // for all other keys, just pass through to the observable object if 
@@ -199,18 +219,8 @@ SC.ObjectProxy = SC.Object.extend({
       }
       return value;
     }).property('observableContent.' + key).cacheable());
-    return get(this, key);
   },
 
-  /**
-  */
-  contentDidChange: function() {
-    this._proxiedProperties.forEach(function(key){
-      this.notifyPropertyChange(key);
-    }, this);
-  }.observes('content'),
-
-  /** @private */
   _proxiedProperties: new SC.Set()
 });
 
